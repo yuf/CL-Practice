@@ -1,4 +1,4 @@
-(defun multiply (x y)
+B1;2600;0c(defun multiply (x y)
   (if (= 0 y)
       0
       (let ((z (multiply x (truncate (/ y 2)))))
@@ -108,3 +108,6 @@
       (power x e))
     (defun decode (x)
       (modexp x d N))))
+
+(defun hello ()
+  (print "hello world!"))
