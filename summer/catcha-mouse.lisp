@@ -1,0 +1,45 @@
+(defun map-int (fn a b)
+  (let ((result nil))
+    (dotimes (i (1+ (- b a)) (reverse result))
+      (push (funcall fn (+ i a)) result))))
+
+(defun make-world ()
+  (flet ((world-filter (x)
+	   (multiple-value-bind (c r) (floor x 10)
+	     (not (or (= r 0) (and (evenp c) (= r 9)))))))
+    (filter #'world-filter (map-int #'identity 10 80))))
+
+(defparameter *world* nil)
+(defparameter *value-list* nil)
+
+(defun init-game ()
+  (setq *world* (make-world))
+  (setq *value-list* (mapcar (lambda (x) (cons x 0)) *world*)))
+
+(defun get-adjacent (n)
+  (flet ((in-world? (x)
+	   (member x *world*)))
+    (remove-if-not #'in-world? (list (1- n) (1+ n) (- n 10) (+ n 10) (- n 9) (+ n 9)))))
+
+(defun attach-value (n value &key override)
+  (flet ((add-and-filter (filter-fn)
+	   (setq *value-list* (cons (cons n value) (remove-if filter-fn *value-list*)))))
+    (let ((old-value (assoc n *value-list*)))
+      (cond ((null old-value) (add-and-filter #'null))
+	    (override (add-and-filter (lambda (x) (equal (car x) (car old-value)))))
+	    (t *value-list*)))))
+
+(defun get-value (n)
+  (cdr (assoc n *value-list*)))
+
+(defun spread-value (queue fn visited)
+  (if (null queue)
+      *value-list*
+      (let* ((node (caar queue))
+	     (dist (cadar queue))
+	     (unvisited-adj (remove-if (lambda (x) (member x visited)) (get-adjacent node))))
+	(dolist (x unvisited-adj)
+	  (push x visited))
+	(attach-value node (+ (get-value node) (funcall fn dist)) :override t)
+	(print queue)
+	(spread-value (append (cdr queue) (mapcar (lambda (x) (list x (1+ dist))) unvisited-adj)) fn visited))))
